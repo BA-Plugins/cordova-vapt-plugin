@@ -1,9 +1,9 @@
 {
-  "name": "com.outsystems.vapt",
+  "name": "com-outsystems-vapt",
   "version": "1.0.0",
   "description": "",
   "cordova": {
-    "id": "com.outsystems.vapt",
+    "id": "com-outsystems-vapt",
     "platforms": []
   },
   "keywords": [

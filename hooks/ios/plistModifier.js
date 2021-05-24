@@ -8,38 +8,25 @@ const DIR_SEARCH_EXCEPTION = ["build", "cordova", "CordovaLib"];
 const FILE_PACKAGE = "package.json";
 const FOLDER_PLATFORMS = "platforms";
 
-function addOrReplaceNSAppTransportSecurityConfig(file,key,value,toReplace) {
-    var pListContent = fs.readFileSync(file, "utf8");
-    let pListObj = plist.parse(pListContent);
-    var existsATS = false;
-    var existskey = false;
-    for (let property in pListObj) {
-        if (property.localeCompare(NSAppTransportSecurity) == 0) {
-            for (let ATSKeys in pListObj[property]){
-                if (ATSKeys.localeCompare(key) == 0) {
-                    if(toReplace){
-                        pListObj[property][key] = value;
-                    }else{
-                        let json = JSON.parse(value);
-                        pListObj[property][key] = Object.assign(pListObj[NSAppTransportSecurity], json);
-                    }
-                    existskey = true;
-                }
+function addOrReplaceNSAppTransportSecurityConfig(pListObj,key,value,toReplace) {
+
+    console.log(toReplace)
+    if(pListObj[NSAppTransportSecurity] !== undefined){
+        if(pListObj[NSAppTransportSecurity][key] !== undefined){
+            if(toReplace){
+                var newValue = (typeof value === 'object' )? Object.assign({}, value) : JSON.stringify(value);
+                pListObj[NSAppTransportSecurity][key] = newValue;
+            }else{
+                var newValue = (typeof value === 'object' )? Object.assign(pListObj[NSAppTransportSecurity][key], value) : JSON.stringify(value);
+                pListObj[NSAppTransportSecurity][key] = newValue;
             }
-            existsATS = true;
-        }
-    }
-    if(existsATS && !existskey){
-        if(toReplace){
-            pListObj[NSAppTransportSecurity][key] = value;
         }else{
-            let json = JSON.parse(value);
-            pListObj[NSAppTransportSecurity][key] = json;
+            var newValue = (typeof value === 'object' )? Object.assign({}, value) : JSON.stringify(value);
+            pListObj[NSAppTransportSecurity][key] = newValue;
         }
-    }else if(!existsATS){
-        let jsonString = '{"'+key+'":'+value+'}'
-        let json = JSON.parse(jsonString);
-        pListObj[NSAppTransportSecurity] = Object.assign({}, json);
+    }else{
+        let jsonString = '{"'+key+'":'+JSON.stringify(value)+'}'
+        pListObj[NSAppTransportSecurity] = Object.assign({}, JSON.parse(jsonString));
     }
 
     //Fixes crash on BUPA app. Plist structure is not well created.
@@ -50,8 +37,8 @@ function addOrReplaceNSAppTransportSecurityConfig(file,key,value,toReplace) {
     if (pListObj["NSMainNibFile~ipad"] == null) {
         pListObj["NSMainNibFile~ipad"] = '';
     }
-    
-    fs.writeFileSync(file, plist.build(pListObj));
+
+    return pListObj;
 }
 
 
@@ -142,7 +129,7 @@ module.exports = function (context) {
     var jsonconfig;
     var configPath = path.join(context.opts.projectRoot,"www", "vapt", "config.json");
 
-    console.log("Started PList change!")
+    console.log("Started PList change!");
     try {
         jsonconfig = fs.readFileSync(configPath, "utf8");
     }
@@ -150,14 +137,27 @@ module.exports = function (context) {
         console.warn("Error in configuration File : " + e.message);
     }
     let pathToPList = searchForPListFile(context.opts.projectRoot);
+    console.log("Found Plist!");
     jsonObj = JSON.parse(jsonconfig)
     jsonObj = jsonObj.ios;
+
+    var pListContent = fs.readFileSync(pathToPList, "utf8");
+    let pListObj = plist.parse(pListContent);
+
+    var firstObj = true;
     for(let j = 0;j<jsonObj.length;j++){
         for(key in jsonObj[j]){
+            console.log("Changing "+key+"!");
             var value = jsonObj[j][key];
-            addOrReplaceNSAppTransportSecurityConfig(pathToPList,key,JSON.stringify(value),!(typeof value === 'object' && value !== null));
+            var toReplace = !(typeof value === 'object' && value !== null);
+            pListObj = addOrReplaceNSAppTransportSecurityConfig(pListObj,key,value,(toReplace || firstObj));
+            if(!toReplace){
+                firstObj = false;
+            }
         }
     }
+    console.log("Writing to Plist!");
+    fs.writeFileSync(pathToPList, plist.build(pListObj));
     
     console.log("Ended PList change!");
 

@@ -8,6 +8,8 @@
         <clobbers target="VAPT" />
     </js-module>
 
+    <preference name="ANDROIDMANIFESTDEBUGGABLE" default="false" />
+
     <hook type="before_plugin_install" src="hooks/npmInstall.js"/>
 
     <platform name="android">
@@ -20,6 +22,10 @@
 
         
         <hook type="after_prepare" src="hooks/android/manifestModifier.js" />
+
+        <config-file target="../../config.xml" parent="/widget">
+            <custom-preference name="android-manifest/application/@android:debuggable" value="$ANDROIDMANIFESTDEBUGGABLE" />
+        </config-file>
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">
@@ -31,4 +37,6 @@
         <hook type="before_prepare" src="hooks/ios/plistModifier.js" />
         <hook type="before_build" src="hooks/ios/plistModifier.js" />
     </platform>
+
+    <dependency id="cordova-custom-config" version="^5.1.0" />
 </plugin>

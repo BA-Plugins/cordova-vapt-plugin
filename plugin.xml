@@ -26,6 +26,14 @@
         <config-file target="../../config.xml" parent="/widget">
             <custom-preference name="android-manifest/application/@android:debuggable" value="$ANDROIDMANIFESTDEBUGGABLE" />
         </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <queries>
+                <intent>
+                    <action android:name="android.support.customtabs.action.CustomTabsService" />
+                </intent>
+            </queries>
+
+        </config-file>
     </platform>
     <platform name="ios">
         <config-file parent="/*" target="config.xml">
